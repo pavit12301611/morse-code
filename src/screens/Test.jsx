@@ -74,7 +74,7 @@ export function Test() {
   }, [play, pool])
 
   const check = useCallback(() => {
-    if (phase !== 'question' || !current) return
+    if (phase !== 'question' || !current || !answer.trim()) return
     const correct = isCorrect(answer, current)
     setResult({ correct, given: answer.trim() })
     setResults((prev) => [...prev, { char: current, correct, given: answer.trim() }])
@@ -221,7 +221,7 @@ export function Test() {
                     Check
                   </button>
                 ) : (
-                  <button type="button" className="btn primary" onClick={next} autoFocus>
+                  <button type="submit" className="btn primary" autoFocus>
                     {index + 1 >= total ? 'See results' : 'Next'}
                   </button>
                 )}
