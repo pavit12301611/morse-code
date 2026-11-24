@@ -1,47 +1,27 @@
 # Morse Studio
 
-A calm, rigorous place to learn Morse code — and to learn to **copy it fast enough to be useful**.
+Two things, nothing else: a **random Morse listening test** and a **complete code sheet**.
 
-Most "learn Morse" tools show you a dot-and-dash chart and call it a day. Morse is a sound language,
-so this app teaches it that way: every letter arrives as real CW audio at a fast character speed,
-with wide Farnsworth gaps while you build the ear.
+Open the app and press start — it sends one character at a time in real CW timing (20 wpm,
+620 Hz) and you type what you heard. Every test reshuffles the pool, so the characters and their
+order are different each time. Twenty questions per test, drawn from letters, numbers and
+punctuation (pick which sets you want).
 
-## What's inside
+The **Morse codes** tab is the full reference: A–Z, 0–9, all 18 punctuation marks and symbols,
+and the common prosigns (AR, SK, BT, KN, HH, SOS). It is print-friendly too.
 
-- **Curriculum (Koch method).** 40 characters in 20 lessons, two at a time, mixed with review.
-  A lesson passes at 90% accuracy before the next unlocks.
-- **Recognition drill.** One clean pass per character. Answers are timed and every letter's
-  accuracy/latency is tracked; weak letters are re-served inside the set and weighted heavier in
-  future sets. Modes: single characters, 5-character groups, common words.
-- **Head copy.** Copy a whole transmission in memory, then write it down — groups, words,
-  amateur callsigns, plain sentences and QSO lines. A speed ladder tracks the highest effective
-  speed you have actually copied at 90%+.
-- **Sending.** Straight key or paddle keyer with a live decoder, per-element timing envelope,
-  and scoring against a target. Real sidetone, real spacing rules (1 / 3 / 7 units).
-- **Signal table.** Full alphabet, numbers, punctuation and prosigns, all playable; patterns can be
-  covered for self-testing.
-- **Progress.** Accuracy trend, 14-day practice chart, per-character signal report, session log.
-- **Settings.** Tone frequency / waveform / volume, character speed, Farnsworth spacing, presets,
-  keyer default, themes, JSON export & import, reset.
+## Timing
 
-## Timing model
-
-Based on the PARIS standard: a dit is `1200 / WPM` ms, a dah is three dits. With Farnsworth
-spacing, characters are sent at the *character speed* while the extra silence needed to reach the
-*effective speed* is split between letter gaps and word gaps. The app computes it exactly, so the
-effective WPM label is not decorative.
+A dit is `1200 / WPM` ms and a dash is three dits, following the PARIS standard. Letters are
+spaced three dits apart.
 
 ## Develop
 
 ```bash
 npm install
 npm run dev     # http://localhost:5173
-npm run build   # production build
+npm run build   # production build in dist/
 ```
 
-React + Vite + Web Audio, no backend. All progress is stored in `localStorage` on the device.
-
-## Browser support
-
-Current Chrome, Safari, Firefox and Edge. Audio requires one user gesture (a click or key press)
-before the tone can start, which the app handles automatically.
+React + Vite + Web Audio, no backend, no tracking. Audio needs one tap or key press before the
+tone can start, which happens naturally when you start a test.
