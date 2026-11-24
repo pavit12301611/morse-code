@@ -253,6 +253,83 @@ a {
   transition: width 0.25s ease;
 }
 
+/* mode switcher */
+.modes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #0e1116;
+}
+
+.mode {
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mode:hover {
+  color: var(--ink);
+}
+
+.mode.on {
+  background: var(--gold);
+  color: var(--gold-ink);
+  font-weight: 600;
+}
+
+.mode:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.mode-note {
+  margin: 10px 0 22px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* written prompt */
+.prompt {
+  display: grid;
+  place-items: center;
+  min-height: 152px;
+  margin: 2px 0 20px;
+  padding: 18px;
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  background: #0e1116;
+}
+
+.prompt-code {
+  padding-left: 0.22em;
+  color: var(--gold);
+  font-size: clamp(40px, 9vw, 56px);
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.22em;
+  word-break: break-all;
+  text-align: center;
+}
+
+.prompt-char {
+  color: var(--ink);
+  font-size: clamp(58px, 12vw, 76px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
 /* pools */
 .chips {
   display: flex;
@@ -514,6 +591,13 @@ a {
   border-color: var(--gold);
   box-shadow: 0 0 0 4px rgba(246, 189, 107, 0.12);
   outline: none;
+}
+
+.answer-input.pattern-input {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 24px;
+  letter-spacing: 0.18em;
+  text-transform: none;
 }
 
 .answer-row .btn {

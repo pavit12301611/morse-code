@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { engine } from '../lib/audio'
 import { MORSE, LETTERS, DIGITS, PUNCT, charName } from '../lib/morse'
-import { buildDeck, isCorrect, TEST_SIZE } from '../lib/quiz'
+import { buildDeck, isCorrect, isPatternCorrect, TEST_SIZE } from '../lib/quiz'
 
 const POOLS = [
   { id: 'letters', label: 'Letters', chars: LETTERS },
@@ -9,9 +9,16 @@ const POOLS = [
   { id: 'punctuation', label: 'Punctuation', chars: PUNCT },
 ]
 
+const MODES = [
+  { id: 'read', label: 'Read', note: 'See the written code and name the character.' },
+  { id: 'write', label: 'Write', note: 'See a character and write its dots and dashes.' },
+  { id: 'listen', label: 'Listen', note: 'Hear the character and name it — the sound test, for later.' },
+]
+
 const CODE_SPEED = 20
 
 export function Test() {
+  const [mode, setMode] = useState('read') // read | write | listen
   const [activePools, setActivePools] = useState(['letters', 'numbers'])
   const [phase, setPhase] = useState('ready') // ready | question | answered | done
   const [deck, setDeck] = useState([])
@@ -29,6 +36,8 @@ export function Test() {
     return [...new Set(chars)]
   }, [activePools])
 
+  const modeInfo = MODES.find((m) => m.id === mode) || MODES[0]
+  const listens = mode === 'listen'
   const current = deck[index] ?? null
   const total = deck.length
   const answered = results.length
@@ -45,7 +54,7 @@ export function Test() {
   /* Keep the answer box ready so the test is keyboard-only. */
   useEffect(() => {
     if (phase === 'question') inputRef.current?.focus()
-  }, [phase, index])
+  }, [phase, index, mode])
 
   const play = useCallback((char) => {
     const code = MORSE[char]
@@ -62,24 +71,24 @@ export function Test() {
   const start = useCallback(() => {
     const next = buildDeck(pool, TEST_SIZE)
     if (!next.length) return
-    engine.ensure()
     playToken.current += 1
+    if (listens) engine.ensure()
     setDeck(next)
     setIndex(0)
     setAnswer('')
     setResult(null)
     setResults([])
     setPhase('question')
-    play(next[0])
-  }, [play, pool])
+    if (listens) play(next[0])
+  }, [listens, play, pool])
 
   const check = useCallback(() => {
     if (phase !== 'question' || !current || !answer.trim()) return
-    const correct = isCorrect(answer, current)
+    const correct = mode === 'write' ? isPatternCorrect(answer, current) : isCorrect(answer, current)
     setResult({ correct, given: answer.trim() })
     setResults((prev) => [...prev, { char: current, correct, given: answer.trim() }])
     setPhase('answered')
-  }, [answer, current, phase])
+  }, [answer, current, mode, phase])
 
   const next = useCallback(() => {
     if (phase !== 'answered') return
@@ -92,8 +101,8 @@ export function Test() {
     }
     setIndex(i)
     setPhase('question')
-    play(deck[i])
-  }, [deck, index, phase, play])
+    if (listens) play(deck[i])
+  }, [deck, index, listens, phase, play])
 
   const onSubmit = (e) => {
     e.preventDefault()
@@ -101,34 +110,64 @@ export function Test() {
     else if (phase === 'answered') next()
   }
 
-  const togglePool = (id) => {
-    setActivePools((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-    setPhase('ready')
+  const resetSession = () => {
+    playToken.current += 1
+    engine.stop()
+    setPlaying(false)
     setDeck([])
     setResults([])
     setResult(null)
     setAnswer('')
-    engine.stop()
+    setPhase('ready')
+  }
+
+  const chooseMode = (id) => {
+    if (id === mode) return
+    setMode(id)
+    resetSession()
+  }
+
+  const togglePool = (id) => {
+    setActivePools((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+    resetSession()
   }
 
   const poolLine = activePools.length
     ? `${pool.length} characters in the pool`
     : 'Pick at least one set to start'
 
+  const promptLabel =
+    mode === 'write' ? 'How is this written in Morse?' : listens ? 'What did you hear?' : 'What character is this?'
+
   return (
     <div className="test">
       <header className="page-head">
-        <span className="eyebrow">Random listening test</span>
-        <h1 className="h1">Hear it. Name it.</h1>
+        <span className="eyebrow">Random Morse test</span>
+        <h1 className="h1">Read it. Write it.</h1>
         <p className="lede">
-          One character at a time, picked at random and sent in real CW timing. Type what you
-          hear — every test is a fresh shuffle.
+          A fresh random deck every time. Start with the written code — read the dots and dashes,
+          then write them yourself — and switch to sound when the shapes feel solid.
         </p>
       </header>
 
       <section className="card" aria-label="Morse test">
         {phase === 'ready' && (
           <>
+            <div className="modes" role="group" aria-label="Test mode">
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`mode ${mode === m.id ? 'on' : ''}`}
+                  aria-pressed={mode === m.id}
+                  onClick={() => chooseMode(m.id)}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <p className="mode-note">{modeInfo.note}</p>
+
             <div className="meta-row">
               <span>{TEST_SIZE} questions</span>
               <span>{poolLine}</span>
@@ -155,7 +194,11 @@ export function Test() {
             <button type="button" className="btn primary block start" onClick={start} disabled={!pool.length}>
               Start the test
             </button>
-            <p className="hint">Sound on · {CODE_SPEED} wpm · one character per question</p>
+            <p className="hint">
+              {listens
+                ? `Sound on · ${CODE_SPEED} wpm · one character per question`
+                : 'Written mode · type your answer and press Enter'}
+            </p>
           </>
         )}
 
@@ -163,7 +206,7 @@ export function Test() {
           <>
             <div className="meta-row">
               <span>
-                Question <b>{index + 1}</b> of {total}
+                {modeInfo.label} · Question <b>{index + 1}</b> of {total}
               </span>
               <span>
                 <b className={right ? 'good-text' : ''}>{right}</b> correct
@@ -181,37 +224,47 @@ export function Test() {
               <i style={{ width: `${total ? (answered / total) * 100 : 0}%` }} />
             </div>
 
-            <div className="listen">
-              <button
-                type="button"
-                className={`play-btn ${playing ? 'playing' : ''}`}
-                onClick={() => play(current)}
-                aria-label="Play the character again"
-              >
-                <span className="wave" aria-hidden="true">
-                  <i /><i /><i /><i /><i />
-                </span>
-              </button>
-              <p className="listen-hint">{playing ? 'Sending…' : 'Play again'}</p>
-            </div>
+            {listens ? (
+              <div className="listen">
+                <button
+                  type="button"
+                  className={`play-btn ${playing ? 'playing' : ''}`}
+                  onClick={() => play(current)}
+                  aria-label="Play the character again"
+                >
+                  <span className="wave" aria-hidden="true">
+                    <i /><i /><i /><i /><i />
+                  </span>
+                </button>
+                <p className="listen-hint">{playing ? 'Sending…' : 'Play again'}</p>
+              </div>
+            ) : (
+              <div className={`prompt ${mode}`} aria-live="polite">
+                {mode === 'read' ? (
+                  <code className="prompt-code">{MORSE[current]}</code>
+                ) : (
+                  <span className="prompt-char">{current}</span>
+                )}
+              </div>
+            )}
 
             <form className="answer-form" onSubmit={onSubmit}>
               <label className="label" htmlFor="answer">
-                What did you hear?
+                {promptLabel}
               </label>
               <div className="answer-row">
                 <input
                   id="answer"
                   ref={inputRef}
-                  className="answer-input"
+                  className={`answer-input ${mode === 'write' ? 'pattern-input' : ''}`}
                   type="text"
                   inputMode="text"
                   autoComplete="off"
-                  autoCapitalize="characters"
+                  autoCapitalize={mode === 'write' ? 'none' : 'characters'}
                   autoCorrect="off"
                   spellCheck={false}
-                  maxLength={1}
-                  placeholder="?"
+                  maxLength={mode === 'write' ? 10 : 1}
+                  placeholder={mode === 'write' ? '.-' : '?'}
                   value={answer}
                   readOnly={phase === 'answered'}
                   onChange={(e) => setAnswer(e.target.value)}
@@ -240,7 +293,11 @@ export function Test() {
                   {result.correct ? (
                     <> — exactly right.</>
                   ) : result.given ? (
-                    <> — you answered “{result.given.toUpperCase()}”.</>
+                    <>
+                      {' '}
+                      — you {mode === 'write' ? 'wrote' : 'answered'} “
+                      {mode === 'write' ? result.given : result.given.toUpperCase()}”.
+                    </>
                   ) : (
                     <> — you left it blank.</>
                   )}
@@ -277,8 +334,23 @@ export function Test() {
                 </div>
               </div>
             ) : (
-              <p className="clean">No misses. Every character in this test was copied cleanly.</p>
+              <p className="clean">No misses. Every character in this test was right.</p>
             )}
+
+            <div className="modes" role="group" aria-label="Test mode">
+              {MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className={`mode ${mode === m.id ? 'on' : ''}`}
+                  aria-pressed={mode === m.id}
+                  onClick={() => chooseMode(m.id)}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <p className="mode-note">{modeInfo.note}</p>
 
             <div className="chips" role="group" aria-label="Character sets">
               {POOLS.map((p) => (

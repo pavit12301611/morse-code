@@ -1,4 +1,4 @@
-import { shuffle } from './morse'
+import { MORSE, shuffle } from './morse'
 
 /** How many characters a full test asks about (or fewer, if the pool is smaller). */
 export const TEST_SIZE = 20
@@ -23,4 +23,22 @@ export function normalizeAnswer(value) {
 /** Case- and whitespace-insensitive comparison of a typed answer to a character. */
 export function isCorrect(input, expected) {
   return normalizeAnswer(input) === String(expected).toUpperCase()
+}
+
+/**
+ * Normalise a typed Morse pattern: trims, lowercases, accepts true dashes and
+ * middle dots, and ignores any spacing the user adds between elements.
+ */
+export function normalizePattern(value) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[·•∙]/g, '.')
+    .replace(/[–—−]/g, '-')
+    .replace(/\s+/g, '')
+}
+
+export function isPatternCorrect(input, char) {
+  const expected = MORSE[String(char).toUpperCase()]
+  return !!expected && normalizePattern(input) === expected
 }
